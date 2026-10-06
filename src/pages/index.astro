@@ -1,0 +1,79 @@
+---
+// Landing page: every library once, with a badge per language port.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { LinkButton } from '@astrojs/starlight/components';
+import PortBadge from '../components/PortBadge.astro';
+import { libraries } from '../data/libraries';
+
+const libs = await libraries();
+---
+
+<StarlightPage
+	frontmatter={{
+		title: 'Xenoglyphiq libraries',
+		description: 'Libraries that behave the same in every language. One spec per library, many ports, one shared conformance suite.',
+		template: 'splash',
+		hero: {
+			title: 'Xenoglyphiq libraries',
+			tagline: 'One spec per library. A port per language. Every port passes the same conformance suite, so they behave the same everywhere.',
+		},
+	}}
+>
+	<div class="libraries">
+		{
+			libs.map((lib) => (
+				<a class="library" href={`/${lib.id}/`}>
+					<span class="name">{lib.name}</span>
+					<span class="meta">spec v{lib.specVersion} · {lib.cases} conformance cases</span>
+					<span class="summary">{lib.summary}</span>
+					<span class="ports">{lib.ports.map((p) => <PortBadge port={p} withLanguage />)}</span>
+				</a>
+			))
+		}
+	</div>
+	<p class="more">
+		<LinkButton href="/about/" variant="minimal" icon="right-arrow">How these libraries work</LinkButton>
+	</p>
+</StarlightPage>
+
+<style>
+	.libraries {
+		display: grid;
+		gap: 1rem;
+	}
+	.library {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		padding: 1rem 1.25rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+		text-decoration: none;
+		color: inherit;
+	}
+	.library:hover {
+		border-color: var(--sl-color-gray-3);
+		background: var(--sl-color-gray-7, var(--sl-color-black));
+	}
+	.name {
+		font-size: var(--sl-text-xl);
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.meta {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.summary {
+		color: var(--sl-color-gray-2);
+	}
+	.ports {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.25rem;
+	}
+	.more {
+		margin-top: 1.5rem;
+	}
+</style>

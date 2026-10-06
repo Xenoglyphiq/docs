@@ -1,0 +1,24 @@
+# The only hand-edited library data. Everything else (summary, ports' status and
+# conformance, examples, benchmarks, registry listings) is read at build time from
+# the spec and port repos, so the site can't drift from them.
+#
+# ref: the git ref the site reads a port at. Use the release tag once there is one;
+# `main` before that (the install command then says the release is pending).
+
+libraries:
+  - id: polyline
+    name: Polyline
+    spec: Xenoglyphiq/polyline-spec
+    note: >-
+      Points are `(lon, lat)`, as in GeoJSON. The encoded string stores latitude
+      first; every port converts at the boundary.
+    ports:
+      - language: zig
+        repo: Xenoglyphiq/polyline-zig
+        ref: v0.1.0
+      - language: julia
+        repo: Xenoglyphiq/EncodedPolyline.jl
+        ref: main
+      - language: nim
+        repo: Xenoglyphiq/polyline-nim
+        ref: v0.1.0

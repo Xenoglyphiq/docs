@@ -1,0 +1,29 @@
+---
+// One port's release state, as a Starlight badge.
+import { Badge } from '@astrojs/starlight/components';
+import type { Port } from '../data/libraries';
+
+interface Props {
+	port: Port;
+	withLanguage?: boolean;
+}
+
+const { port, withLanguage = false } = Astro.props;
+const needsListing = port.language === 'julia' || port.language === 'nim';
+const prefix = withLanguage ? `${port.label} ` : '';
+
+let text: string;
+let variant: 'success' | 'caution' | 'note' | 'default';
+if (!port.released) {
+	text = needsListing ? `${prefix}registration pending` : `${prefix}unreleased`;
+	variant = 'caution';
+} else if (needsListing && !port.listed) {
+	text = `${prefix}${port.ref} · listing pending`;
+	variant = 'note';
+} else {
+	text = `${prefix}${port.ref}`;
+	variant = 'success';
+}
+---
+
+<Badge text={text} variant={variant} />

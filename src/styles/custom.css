@@ -1,0 +1,6 @@
+/* Badges are short labels; never break them mid-word (narrow tables scroll instead).
+   Starlight's content styles set overflow-wrap: anywhere, which overrides nowrap alone. */
+.sl-badge {
+	white-space: nowrap;
+	overflow-wrap: normal;
+}
