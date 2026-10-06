@@ -1,0 +1,144 @@
+---
+// One page per library in catalog.yaml: install and examples in synced language
+// tabs (pick a language once and every tab on the site follows), then ports,
+// conformance and benchmarks. All content comes from src/data/libraries.ts.
+import StarlightPage from '@astrojs/starlight/components/StarlightPage.astro';
+import { Aside, Code, Tabs, TabItem } from '@astrojs/starlight/components';
+import PortBadge from '../components/PortBadge.astro';
+import { catalog, library, LANGUAGES } from '../data/libraries';
+
+export function getStaticPaths() {
+	return catalog().map((l) => ({ params: { library: l.id } }));
+}
+
+const lib = await library(Astro.params.library!);
+
+/** Inline `code` in catalog notes, nothing more. */
+const inline = (s: string) =>
+	s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+const benchmarkNames = [...new Set(lib.ports.flatMap((p) => p.benchmarks.map((b) => b.benchmark)))];
+const reference = (name: string) => lib.ports.flatMap((p) => p.benchmarks).find((b) => b.benchmark === name)?.reference;
+
+const headings = [
+	{ depth: 2, slug: 'install', text: 'Install' },
+	{ depth: 2, slug: 'examples', text: 'Examples' },
+	...lib.examples.map((e) => ({ depth: 3, slug: e.id, text: e.title })),
+	{ depth: 2, slug: 'ports', text: 'Ports' },
+	...(benchmarkNames.length ? [{ depth: 2, slug: 'performance', text: 'Performance' }] : []),
+	{ depth: 2, slug: 'spec', text: 'Spec and source' },
+];
+---
+
+<StarlightPage frontmatter={{ title: lib.name, description: lib.summary }} headings={headings}>
+	<p>{lib.summary}</p>
+	<p>
+		Implements <a href={lib.implementsUrl}>{lib.implementsName}</a>. Spec v{lib.specVersion}; every port passes
+		the same {lib.cases} conformance cases.
+	</p>
+	<p class="port-badges">{lib.ports.map((p) => <PortBadge port={p} withLanguage />)}</p>
+	{lib.note && <Aside type="note"><Fragment set:html={inline(lib.note)} /></Aside>}
+
+	<h2 id="install">Install</h2>
+	<Tabs syncKey="language">
+		{
+			lib.ports.map((p) => (
+				<TabItem label={p.label}>
+					{p.installNote && <Aside type="caution">{p.installNote}</Aside>}
+					{p.install.map((i) => <Code code={i.code} lang={i.lang} />)}
+				</TabItem>
+			))
+		}
+	</Tabs>
+
+	<h2 id="examples">Examples</h2>
+	<p>The same three examples exist in every port, runnable as-is from each repository's <code>examples/</code> folder.</p>
+	{
+		lib.examples.map((ex) => (
+			<>
+				<h3 id={ex.id}>{ex.title}</h3>
+				<Tabs syncKey="language">
+					{lib.ports
+						.filter((p) => ex.code[p.language])
+						.map((p) => (
+							<TabItem label={p.label}>
+								<Code
+									code={ex.code[p.language]!}
+									lang={LANGUAGES[p.language].highlight}
+									title={`examples/${ex.id}.${LANGUAGES[p.language].ext}`}
+								/>
+							</TabItem>
+						))}
+				</Tabs>
+			</>
+		))
+	}
+
+	<h2 id="ports">Ports</h2>
+	<table>
+		<thead>
+			<tr><th>Language</th><th>Package</th><th>Release</th><th>Spec</th><th>Conformance</th></tr>
+		</thead>
+		<tbody>
+			{
+				lib.ports.map((p) => (
+					<tr>
+						<td><a href={`https://github.com/${p.repo}`}>{p.label}</a></td>
+						<td><code>{p.packageName}</code></td>
+						<td><PortBadge port={p} /></td>
+						<td>{p.specVersion ? `v${p.specVersion}` : '—'}</td>
+						<td>{p.claims.length ? `${p.claims.join(' ✓ ')} ✓ (${lib.cases}/${lib.cases})` : '—'}</td>
+					</tr>
+				))
+			}
+		</tbody>
+	</table>
+
+	{
+		benchmarkNames.length > 0 && (
+			<>
+				<h2 id="performance">Performance</h2>
+				<p>Median time, and ratio to the reference implementation measured in the same session. The spec's target is within 2×.</p>
+				<table>
+					<thead>
+						<tr>
+							<th>Port</th>
+							{benchmarkNames.map((n) => <th>{n}</th>)}
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>Reference</td>
+							{benchmarkNames.map((n) => <td>{reference(n)}</td>)}
+						</tr>
+						{lib.ports.map((p) => (
+							<tr>
+								<td>{p.label}</td>
+								{benchmarkNames.map((n) => {
+									const b = p.benchmarks.find((x) => x.benchmark === n);
+									return <td>{b ? `${b.port} (${b.ratio})` : '—'}</td>;
+								})}
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</>
+		)
+	}
+
+	<h2 id="spec">Spec and source</h2>
+	<ul>
+		<li><a href={`https://github.com/${lib.spec}/blob/main/spec/SPEC.md`}>Behavior spec</a> and <a href={`https://github.com/${lib.spec}/blob/main/spec/capability.yaml`}>machine-readable contract</a></li>
+		<li><a href={`https://github.com/${lib.spec}/blob/main/conformance/manifest.json`}>Conformance cases</a> ({lib.cases})</li>
+		<li><a href={`https://github.com/${lib.spec}/blob/main/DECISIONS.md`}>Decisions</a> and <a href={`https://github.com/${lib.spec}/blob/main/bench/README.md`}>benchmark method</a></li>
+		{lib.ports.map((p) => <li>{p.label} port: <a href={`https://github.com/${p.repo}`}>{p.repo}</a></li>)}
+	</ul>
+</StarlightPage>
+
+<style>
+	.port-badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+</style>

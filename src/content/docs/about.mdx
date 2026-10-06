@@ -1,0 +1,28 @@
+---
+title: How these libraries work
+description: One language-neutral spec per library, a port per language, and a shared conformance suite that every port must pass.
+---
+
+Every library here exists in several languages and behaves the same way in each of them, down to its error codes.
+
+## One spec, many ports
+
+Each library has a **spec repository** (`<library>-spec`). It describes the behavior once, in a language-neutral way, and holds the **conformance cases**: inputs with expected outputs, including expected errors.
+
+Each language gets its own **port repository**, laid out the way that language expects. A port passes every conformance case before it claims a level (`core`, `io` or `full`). Where a reference implementation exists, the cases are generated from it; where it can't produce a case, the case is written from the spec.
+
+## Same shape everywhere
+
+- **Same operations**, named in each language's own style.
+- **Same errors**: a kind (`invalid_input`, `limit_exceeded`, …) and a stable code such as `polyline.invalid_char`, plus a byte offset where it applies.
+- **Same limits** on untrusted input, with documented defaults.
+- **Same three examples**, which is what the tabs on each library page show.
+
+## Tested and measured
+
+- Every decoder of untrusted input is **fuzzed**.
+- Every port is **benchmarked** against a mature reference implementation on the same input, with the same method. Each library page shows the ratio.
+
+## License
+
+Everything is **MIT OR Apache-2.0**.
