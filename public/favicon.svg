@@ -1,1 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><path fill-rule="evenodd" d="M81 36 64 0 47 36l-1 2-9-10a6 6 0 0 0-9 9l10 10h-2L0 64l36 17h2L28 91a6 6 0 1 0 9 9l9-10 1 2 17 36 17-36v-2l9 10a6 6 0 1 0 9-9l-9-9 2-1 36-17-36-17-2-1 9-9a6 6 0 1 0-9-9l-9 10v-2Zm-17 2-2 5c-4 8-11 15-19 19l-5 2 5 2c8 4 15 11 19 19l2 5 2-5c4-8 11-15 19-19l5-2-5-2c-8-4-15-11-19-19l-2-5Z" clip-rule="evenodd"/><path d="M118 19a6 6 0 0 0-9-9l-3 3a6 6 0 1 0 9 9l3-3Zm-96 4c-2 2-6 2-9 0l-3-3a6 6 0 1 1 9-9l3 3c3 2 3 6 0 9Zm0 82c-2-2-6-2-9 0l-3 3a6 6 0 1 0 9 9l3-3c3-2 3-6 0-9Zm96 4a6 6 0 0 1-9 9l-3-3a6 6 0 1 1 9-9l3 3Z"/><style>path{fill:#000}@media (prefers-color-scheme:dark){path{fill:#fff}}</style></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-48 -48 96 96" role="img">
+<title>Xenoglyphiq</title>
+<style>
+  .h0 { stroke: #F6C177 } .h1 { stroke: #EB6F92 } .h2 { stroke: #8E2A55 }
+  .tx { fill: #1E1A1C } .ts { fill: #6B5F64 }
+  @media (prefers-color-scheme: dark) {
+    .h0 { stroke: #8E2A55 } .h2 { stroke: #F6C177 }
+    .tx { fill: #F7EDEF } .ts { fill: #C9A9B6 }
+  }
+</style>
+<polygon class="h0" points="14,-40 36.52,-27 36.52,-1 14,12 -8.52,-1 -8.52,-27" fill="none" stroke-width="7" stroke-linejoin="round"/>
+<polygon class="h1" points="0,-26 22.52,-13 22.52,13 0,26 -22.52,13 -22.52,-13" fill="none" stroke-width="7" stroke-linejoin="round"/>
+<polygon class="h2" points="-14,-12 8.52,1 8.52,27 -14,40 -36.52,27 -36.52,1" fill="none" stroke-width="7" stroke-linejoin="round"/>
+</svg>
