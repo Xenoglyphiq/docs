@@ -37,7 +37,10 @@ export default defineConfig({
 			sidebar: [
 				{
 					label: 'Libraries',
-					items: libraries.map((/** @type {{ id: string; name: string }} */ l) => ({ label: l.name, link: `/${l.id}/` })),
+					// Same order as the site's pages: libraries by name.
+					items: [...libraries]
+						.sort((/** @type {{ name: string }} */ a, /** @type {{ name: string }} */ b) => a.name.localeCompare(b.name, 'en', { sensitivity: 'base' }))
+						.map((/** @type {{ id: string; name: string }} */ l) => ({ label: l.name, link: `/${l.id}/` })),
 				},
 				{ label: 'How these libraries work', slug: 'about' },
 			],

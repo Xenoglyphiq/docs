@@ -100,8 +100,14 @@ async function required(url: string): Promise<string> {
 	return text;
 }
 
+/** Display order, the same on every page: libraries by name, ports by language name. */
+const byName = (a: string, b: string) => a.localeCompare(b, 'en', { sensitivity: 'base' });
+
 export function catalog(): CatalogLibrary[] {
-	return (parse(catalogText) as { libraries: CatalogLibrary[] }).libraries;
+	const libs = (parse(catalogText) as { libraries: CatalogLibrary[] }).libraries;
+	return libs
+		.map((l) => ({ ...l, ports: [...l.ports].sort((a, b) => byName(LANGUAGES[a.language].label, LANGUAGES[b.language].label)) }))
+		.sort((a, b) => byName(a.name, b.name));
 }
 
 /** Rows of the markdown table under a README's `## Performance` heading. */
