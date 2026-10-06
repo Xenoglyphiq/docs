@@ -33,13 +33,13 @@ libraries:
     ports:
       - language: nim
         repo: Xenoglyphiq/pmtiles-nim
-        ref: v0.1.0
+        ref: v0.2.0
       - language: swift
         repo: Xenoglyphiq/pmtiles-swift
-        ref: 0.1.0
+        ref: 0.2.0
         modules: [PMTiles, PMTilesIO]
         examples: Examples/{id}/main.swift
       - language: zig
         repo: Xenoglyphiq/pmtiles-zig
-        ref: v0.1.0
+        ref: v0.2.0
         modules: [pmtiles, pmtiles_io]
