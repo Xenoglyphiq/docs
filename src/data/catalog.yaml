@@ -24,3 +24,22 @@ libraries:
       - language: nim
         repo: Xenoglyphiq/polyline-nim
         ref: v0.1.0
+  - id: pmtiles
+    name: PMTiles
+    spec: Xenoglyphiq/pmtiles-spec
+    note: >-
+      Read-only. Tiles come back exactly as stored, still compressed with the
+      archive's tile compression; decoding vector tiles (MVT) or images is up to you.
+    ports:
+      - language: nim
+        repo: Xenoglyphiq/pmtiles-nim
+        ref: v0.1.0
+      - language: swift
+        repo: Xenoglyphiq/pmtiles-swift
+        ref: 0.1.0
+        modules: [PMTiles, PMTilesIO]
+        examples: Examples/{id}/main.swift
+      - language: zig
+        repo: Xenoglyphiq/pmtiles-zig
+        ref: v0.1.0
+        modules: [pmtiles, pmtiles_io]

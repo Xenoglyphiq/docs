@@ -14,6 +14,10 @@ interface CatalogPort {
 	language: Language;
 	repo: string;
 	ref: string;
+	/** Zig modules or Swift products to show in the install snippet; default: the package name. */
+	modules?: string[];
+	/** Where the port keeps a canonical example, `{id}` replaced; default `examples/{id}.<ext>`. */
+	examples?: string;
 }
 
 interface CatalogLibrary {
@@ -123,7 +127,7 @@ function parseBenchmarks(readme: string): Benchmark[] {
 }
 
 /** Whether a package is listed in its language's public registry. */
-async function isListed(language: Language, name: string): Promise<boolean> {
+async function isListed(language: Language, name: string, repo: string): Promise<boolean> {
 	if (language === 'julia') {
 		const url = `${RAW}/JuliaRegistries/General/master/${name[0].toUpperCase()}/${name}/Package.toml`;
 		return (await fetchText(url)) !== undefined;
@@ -132,11 +136,17 @@ async function isListed(language: Language, name: string): Promise<boolean> {
 		const pkgs = JSON.parse(await required(`${RAW}/nim-lang/packages/master/packages.json`)) as { name?: string; url?: string }[];
 		return pkgs.some((p) => p.name?.toLowerCase() === name.toLowerCase());
 	}
+	if (language === 'swift') {
+		const urls = JSON.parse(await required(`${RAW}/SwiftPackageIndex/PackageList/main/packages.json`)) as string[];
+		const want = `https://github.com/${repo}`.toLowerCase();
+		return urls.some((u) => u.toLowerCase().replace(/\.git$/, '') === want);
+	}
 	return false; // registries without a listing step (Zig: git tags)
 }
 
-function installFor(p: { language: Language; repo: string; ref: string; packageName: string; listed: boolean; released: boolean }) {
+function installFor(p: { language: Language; repo: string; ref: string; packageName: string; modules?: string[]; listed: boolean; released: boolean }) {
 	const url = `https://github.com/${p.repo}`;
+	const modules = p.modules ?? [p.packageName];
 	switch (p.language) {
 		case 'zig':
 			return {
@@ -144,7 +154,11 @@ function installFor(p: { language: Language; repo: string; ref: string; packageN
 					{ lang: 'sh', code: `zig fetch --save git+${url}#${p.ref}` },
 					{
 						lang: 'zig',
-						code: `// build.zig\nconst ${p.packageName} = b.dependency("${p.packageName}", .{ .target = target, .optimize = optimize });\nexe.root_module.addImport("${p.packageName}", ${p.packageName}.module("${p.packageName}"));`,
+						code: [
+							'// build.zig',
+							`const ${p.packageName} = b.dependency("${p.packageName}", .{ .target = target, .optimize = optimize });`,
+							...modules.map((m) => `exe.root_module.addImport("${m}", ${p.packageName}.module("${m}"));`),
+						].join('\n'),
 					},
 				],
 				installNote: p.released ? undefined : 'Not released yet: this installs the latest code from main.',
@@ -163,6 +177,25 @@ function installFor(p: { language: Language; repo: string; ref: string; packageN
 						install: [{ lang: 'sh', code: `nimble install ${url}@#${p.ref}` }],
 						installNote: 'Listing in the Nimble directory is pending; until then, install by URL.',
 					};
+		case 'swift': {
+			const pkg = p.repo.split('/')[1];
+			const dep = p.released ? `from: "${p.ref.replace(/^v/, '')}"` : `branch: "main"`;
+			return {
+				install: [
+					{
+						lang: 'swift',
+						code: [
+							'// Package.swift',
+							`.package(url: "${url}", ${dep}),`,
+							'',
+							'// in your target',
+							`dependencies: [${modules.map((m) => `.product(name: "${m}", package: "${pkg}")`).join(', ')}]`,
+						].join('\n'),
+					},
+				],
+				installNote: p.released ? undefined : 'Not released yet: this installs the latest code from main.',
+			};
+		}
 		default:
 			return { install: [{ lang: 'sh', code: `# See ${url}#install` }] };
 	}
@@ -190,8 +223,9 @@ async function loadLibrary(entry: CatalogLibrary): Promise<Library> {
 		entry.ports.map(async (cp) => {
 			const meta = (cap.ports ?? []).find((p: { language: string }) => p.language === cp.language) ?? {};
 			const packageName: string = meta.package ?? entry.id;
-			const released = meta.status === 'released' || cp.ref.startsWith('v');
-			const listed = await isListed(cp.language, packageName);
+			// A release tag: `vA.B.C`, or `A.B.C` where the ecosystem expects it (Swift).
+			const released = meta.status === 'released' || /^v?\d+\.\d+\.\d+$/.test(cp.ref);
+			const listed = await isListed(cp.language, packageName, cp.repo);
 			const readme = await required(`${RAW}/${cp.repo}/${cp.ref}/README.md`);
 			return {
 				language: cp.language,
@@ -215,7 +249,8 @@ async function loadLibrary(entry: CatalogLibrary): Promise<Library> {
 			const code: Example['code'] = {};
 			await Promise.all(
 				entry.ports.map(async (cp) => {
-					const text = await fetchText(`${RAW}/${cp.repo}/${cp.ref}/examples/${ex.id}.${LANGUAGES[cp.language].ext}`);
+					const path = (cp.examples ?? `examples/{id}.${LANGUAGES[cp.language].ext}`).replace('{id}', ex.id);
+					const text = await fetchText(`${RAW}/${cp.repo}/${cp.ref}/${path}`);
 					if (text !== undefined) code[cp.language] = text.trimEnd();
 				}),
 			);
