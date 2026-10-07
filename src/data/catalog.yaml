@@ -43,3 +43,23 @@ libraries:
         repo: Xenoglyphiq/pmtiles-zig
         ref: v0.2.0
         modules: [pmtiles, pmtiles_io]
+  - id: robotstxt
+    name: robots.txt
+    spec: Xenoglyphiq/robotstxt-spec
+    note: >-
+      RFC 9309, with Google's parser as the tie-breaker where the RFC is loose. Pass
+      the crawler's product token (FooBot, not a full User-Agent string) and the URL's
+      path with its query. Crawl-delay is supported as an extension; it isn't part of RFC 9309.
+    ports:
+      - language: julia
+        repo: Xenoglyphiq/RobotsTxt.jl
+        ref: main
+      - language: swift
+        repo: Xenoglyphiq/robotstxt-swift
+        ref: 0.1.0
+        modules: [RobotsTxt, RobotsTxtIO]
+        examples: Examples/{id}/main.swift
+      - language: zig
+        repo: Xenoglyphiq/robotstxt-zig
+        ref: v0.1.0
+        modules: [robotstxt, robotstxt_io]
