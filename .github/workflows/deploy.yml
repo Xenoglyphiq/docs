@@ -3,7 +3,9 @@ name: deploy
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'LICENSE-*']  # docs-only changes don't need CI
   pull_request:
+    paths-ignore: ['**.md', 'LICENSE-*']  # docs-only changes don't need CI
   # Rebuild daily so library data (ports, releases, registry listings) stays current.
   schedule:
     - cron: '17 6 * * *'
