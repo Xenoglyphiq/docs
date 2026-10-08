@@ -88,7 +88,8 @@ const cache = new Map<string, Promise<string | undefined>>();
 function fetchText(url: string): Promise<string | undefined> {
 	let p = cache.get(url);
 	if (!p) {
-		p = fetch(url).then(async (res) => {
+		// crates.io rejects requests without a User-Agent; the others don't mind one.
+		p = fetch(url, { headers: { 'User-Agent': 'docs.xenoglyphiq.dev build (https://github.com/Xenoglyphiq/docs)' } }).then(async (res) => {
 			if (res.status === 404) return undefined;
 			if (!res.ok) throw new Error(`${res.status} ${res.statusText} fetching ${url}`);
 			return res.text();
@@ -141,7 +142,30 @@ async function isListed(language: Language, name: string, repo: string): Promise
 		const want = `https://github.com/${repo}`.toLowerCase();
 		return urls.some((u) => u.toLowerCase().replace(/\.git$/, '') === want);
 	}
-	return false; // registries without a listing step (Zig: git tags)
+	if (language === 'rust') {
+		return (await fetchText(`https://crates.io/api/v1/crates/${name}`)) !== undefined;
+	}
+	if (language === 'python') {
+		return (await fetchText(`https://pypi.org/pypi/${name}/json`)) !== undefined;
+	}
+	if (language === 'kotlin') {
+		const [group, artifact] = name.split(':');
+		return (await fetchText(`https://repo1.maven.org/maven2/${group.replaceAll('.', '/')}/${artifact}/maven-metadata.xml`)) !== undefined;
+	}
+	return false; // registries without a listing step (Zig, Go: git tags)
+}
+
+/** A port's package name when capability.yaml doesn't give one (the org's NAMING.md). */
+function defaultPackage(language: Language, id: string): string {
+	switch (language) {
+		case 'rust':
+		case 'python':
+			return `xenoglyphiq-${id}`;
+		case 'kotlin':
+			return `com.xenoglyphiq:${id}-core`;
+		default:
+			return id;
+	}
 }
 
 function installFor(p: { language: Language; repo: string; ref: string; packageName: string; modules?: string[]; listed: boolean; released: boolean }) {
@@ -177,6 +201,42 @@ function installFor(p: { language: Language; repo: string; ref: string; packageN
 						install: [{ lang: 'sh', code: `nimble install ${url}@#${p.ref}` }],
 						installNote: 'Listing in the Nimble directory is pending; until then, install by URL.',
 					};
+		case 'go': {
+			const module = `github.com/${p.repo.toLowerCase()}`; // Go module paths are lowercase
+			return {
+				install: [{ lang: 'sh', code: `go get ${module}@${p.released ? p.ref : 'main'}` }],
+				installNote: p.released ? undefined : 'Not released yet: this installs the latest code from main.',
+			};
+		}
+		case 'python':
+			return p.listed
+				? { install: [{ lang: 'sh', code: `pip install ${p.packageName}` }] }
+				: {
+						install: [{ lang: 'sh', code: `pip install "git+${url}@${p.released ? p.ref : 'main'}"` }],
+						installNote: 'Publishing to PyPI is pending; until then, install from the repository.',
+					};
+		case 'rust':
+			return p.listed
+				? { install: [{ lang: 'sh', code: `cargo add ${p.packageName}` }] }
+				: {
+						install: [{ lang: 'sh', code: `cargo add --git ${url} ${p.released ? `--tag ${p.ref}` : '--branch main'} ${p.packageName}` }],
+						installNote: 'Publishing to crates.io is pending; until then, install from the repository.',
+					};
+		case 'kotlin': {
+			const [group] = p.packageName.split(':');
+			const artifacts = p.modules ?? [p.packageName.split(':')[1]];
+			const version = p.released ? p.ref.replace(/^v/, '') : '0.0.0';
+			const deps = artifacts.map((a) => `    implementation("${group}:${a}:${version}")`).join('\n');
+			return p.listed
+				? { install: [{ lang: 'kotlin', code: `// build.gradle.kts\ndependencies {\n${deps}\n}` }] }
+				: {
+						install: [
+							{ lang: 'sh', code: `git clone ${url}\ncd ${p.repo.split('/')[1]}\n./gradlew publishToMavenLocal` },
+							{ lang: 'kotlin', code: `// build.gradle.kts\nrepositories { mavenLocal() }\ndependencies {\n${deps}\n}` },
+						],
+						installNote: 'Publishing to Maven Central is pending; until then, build it from the repository into your local Maven repository.',
+					};
+		}
 		case 'swift': {
 			const pkg = p.repo.split('/')[1];
 			const dep = p.released ? `from: "${p.ref.replace(/^v/, '')}"` : `branch: "main"`;
@@ -222,7 +282,7 @@ async function loadLibrary(entry: CatalogLibrary): Promise<Library> {
 	const ports: Port[] = await Promise.all(
 		entry.ports.map(async (cp) => {
 			const meta = (cap.ports ?? []).find((p: { language: string }) => p.language === cp.language) ?? {};
-			const packageName: string = meta.package ?? entry.id;
+			const packageName: string = meta.package ?? defaultPackage(cp.language, entry.id);
 			// A release tag: `vA.B.C`, or `A.B.C` where the ecosystem expects it (Swift).
 			const released = meta.status === 'released' || /^v?\d+\.\d+\.\d+$/.test(cp.ref);
 			const listed = await isListed(cp.language, packageName, cp.repo);
