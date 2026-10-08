@@ -2,7 +2,8 @@
 # conformance, examples, benchmarks, registry listings) is read at build time from
 # the spec and port repos, so the site can't drift from them.
 #
-# Order here doesn't matter: the site lists libraries by name and ports by language name.
+# Order here doesn't matter: the site lists libraries by name and ports in the org's language
+# order (Swift, Go, Python, Kotlin, Rust, Nim, Zig, Julia).
 #
 # ref: the git ref the site reads a port at. Use the release tag once there is one;
 # `main` before that (the install command then says the release is pending).
