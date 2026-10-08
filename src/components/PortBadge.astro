@@ -9,7 +9,8 @@ interface Props {
 }
 
 const { port, withLanguage = false } = Astro.props;
-const needsListing = port.language === 'julia' || port.language === 'nim';
+// Languages whose registry listing is a separate step from tagging a release.
+const needsListing = ['julia', 'nim', 'python', 'rust', 'kotlin'].includes(port.language);
 const prefix = withLanguage ? `${port.label} ` : '';
 
 let text: string;
