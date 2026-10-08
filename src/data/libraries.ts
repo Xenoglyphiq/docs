@@ -8,7 +8,7 @@ import catalogText from './catalog.yaml?raw';
 
 const RAW = 'https://raw.githubusercontent.com';
 
-export type Language = 'zig' | 'julia' | 'nim' | 'swift' | 'go' | 'rust' | 'python' | 'kotlin';
+export type Language = 'swift' | 'go' | 'python' | 'kotlin' | 'rust' | 'nim' | 'zig' | 'julia';
 
 interface CatalogPort {
 	language: Language;
@@ -71,16 +71,19 @@ export interface Library {
 	examples: Example[];
 }
 
+/** In the org's language order (profile, NAMING.md, CONTRIBUTING.md); ports are listed in this order. */
 export const LANGUAGES: Record<Language, { label: string; ext: string; highlight: string }> = {
-	zig: { label: 'Zig', ext: 'zig', highlight: 'zig' },
-	julia: { label: 'Julia', ext: 'jl', highlight: 'julia' },
-	nim: { label: 'Nim', ext: 'nim', highlight: 'nim' },
 	swift: { label: 'Swift', ext: 'swift', highlight: 'swift' },
 	go: { label: 'Go', ext: 'go', highlight: 'go' },
-	rust: { label: 'Rust', ext: 'rs', highlight: 'rust' },
 	python: { label: 'Python', ext: 'py', highlight: 'python' },
 	kotlin: { label: 'Kotlin', ext: 'kt', highlight: 'kotlin' },
+	rust: { label: 'Rust', ext: 'rs', highlight: 'rust' },
+	nim: { label: 'Nim', ext: 'nim', highlight: 'nim' },
+	zig: { label: 'Zig', ext: 'zig', highlight: 'zig' },
+	julia: { label: 'Julia', ext: 'jl', highlight: 'julia' },
 };
+
+const LANGUAGE_ORDER = Object.keys(LANGUAGES) as Language[];
 
 const cache = new Map<string, Promise<string | undefined>>();
 
@@ -105,13 +108,13 @@ async function required(url: string): Promise<string> {
 	return text;
 }
 
-/** Display order, the same on every page: libraries by name, ports by language name. */
+/** Display order, the same on every page: libraries by name, ports in the org's language order. */
 const byName = (a: string, b: string) => a.localeCompare(b, 'en', { sensitivity: 'base' });
 
 export function catalog(): CatalogLibrary[] {
 	const libs = (parse(catalogText) as { libraries: CatalogLibrary[] }).libraries;
 	return libs
-		.map((l) => ({ ...l, ports: [...l.ports].sort((a, b) => byName(LANGUAGES[a.language].label, LANGUAGES[b.language].label)) }))
+		.map((l) => ({ ...l, ports: [...l.ports].sort((a, b) => LANGUAGE_ORDER.indexOf(a.language) - LANGUAGE_ORDER.indexOf(b.language)) }))
 		.sort((a, b) => byName(a.name, b.name));
 }
 
